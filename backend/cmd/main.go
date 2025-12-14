@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/joho/godotenv"
 
 	"prepbackend/internal/config"
 	"prepbackend/internal/handlers"
@@ -13,8 +15,23 @@ import (
 )
 
 func main() {
+
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Println("Error getting wd:", err)
+	} else {
+		log.Println("PWD =", wd)
+	}
+
+	// FORCE load .env from root
+	err = godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	// load config (validates required envs)
 	if err := config.LoadConfig(); err != nil {
+		log.Println(".env not found, relying on system env")
 		log.Fatalf("config load: %v", err)
 	}
 
@@ -35,9 +52,15 @@ func main() {
 
 	app := fiber.New(fiber.Config{
 		AppName: "PrepBackend",
+		Prefork: false,
 	})
 
-	api := app.Group("/api")
+	api := app.Group("/")
+	api.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("PrepBackend is running")
+	})
+
+	api = app.Group("/api")
 
 	// auth
 	api.Post("/auth/signup", handlers.SignUp)
@@ -68,4 +91,9 @@ func main() {
 	if err := app.Listen(":" + port); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:8080",
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+	}))
 }

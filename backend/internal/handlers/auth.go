@@ -66,8 +66,8 @@ func Login(c *fiber.Ctx) error {
 
 // CreateDefaultAdminIfNotExists seeds admin if env provided
 func CreateDefaultAdminIfNotExists() error {
-	adminEmail := os.Getenv("DEFAULT_ADMIN_EMAIL")
-	adminPass := os.Getenv("DEFAULT_ADMIN_PASSWORD")
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+	adminPass := os.Getenv("ADMIN_PASSWORD")
 	if adminEmail == "" || adminPass == "" {
 		return nil
 	}

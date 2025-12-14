@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Backend",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "cwd": "${workspaceFolder}/backend",
+      "program": "${workspaceFolder}/cmd",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}
