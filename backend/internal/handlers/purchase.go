@@ -28,15 +28,14 @@ func CreateTopicPurchase(c *fiber.Ctx) error {
 	uidStr := c.Locals("user_id").(string)
 	userUUID, _ := uuid.Parse(uidStr)
 
-	amount := topic.PriceInPaisa
+	amount := topic.Price
 	if amount <= 0 {
 		// free topic: create paid purchase
 		p := models.Purchase{
-			ID:            uuid.New(),
-			UserID:        userUUID,
-			TopicID:       &tuid,
-			AmountInPaisa: 0,
-			Status:        "paid",
+			UserID:  userUUID,
+			TopicID: &tuid,
+			Amount:  0,
+			Status:  "paid",
 		}
 		_ = store.DB.Create(&p)
 		return c.JSON(fiber.Map{"free": true, "purchase_id": p.ID})
@@ -48,12 +47,11 @@ func CreateTopicPurchase(c *fiber.Ctx) error {
 	}
 
 	p := models.Purchase{
-		ID:            uuid.New(),
-		UserID:        userUUID,
-		TopicID:       &tuid,
-		AmountInPaisa: amount,
-		PaymentID:     orderID, // temporarily store order id
-		Status:        "pending",
+		UserID:    userUUID,
+		TopicID:   &tuid,
+		Amount:    amount,
+		PaymentID: orderID, // temporarily store order id
+		Status:    "pending",
 	}
 	if err := store.DB.Create(&p).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "db error"})
@@ -67,7 +65,7 @@ func CreateTopicPurchase(c *fiber.Ctx) error {
 	})
 }
 
-func createRazorpayOrder(amount int) (string, error) {
+func createRazorpayOrder(amount float32) (string, error) {
 	data := map[string]interface{}{
 		"amount":   amount,
 		"currency": "INR",

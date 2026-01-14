@@ -11,10 +11,10 @@ import (
 )
 
 type createCourseReq struct {
-	Title        string `json:"title"`
-	Slug         string `json:"slug"`
-	Description  string `json:"description"`
-	PriceInPaisa int    `json:"price_in_paisa"`
+	Title       string `json:"title"`
+	Slug        string `json:"slug"`
+	Description string `json:"description"`
+	Price       int    `json:"price_in_paisa"`
 }
 
 func GetCourses(c *fiber.Ctx) error {
@@ -37,12 +37,10 @@ func AdminCreateCourse(c *fiber.Ctx) error {
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
+
 	course := models.Course{
-		ID:           uuid.New(),
-		Title:        body.Title,
-		Slug:         body.Slug,
-		Description:  body.Description,
-		PriceInPaisa: body.PriceInPaisa,
+		Title:       body.Title,
+		Description: body.Description,
 	}
 	if err := store.DB.Create(&course).Error; err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "db error"})
@@ -51,32 +49,36 @@ func AdminCreateCourse(c *fiber.Ctx) error {
 }
 
 type createTopicReq struct {
-	Title        string `json:"title"`
-	Description  string `json:"description"`
-	OrderIndex   int    `json:"order_index"`
-	PriceInPaisa int    `json:"price_in_paisa"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	OrderIndex  int     `json:"order_index"`
+	Price       float32 `json:"price"`
 }
 
 func AdminCreateTopic(c *fiber.Ctx) error {
 	courseID := c.Params("id")
 	uid, err := uuid.Parse(courseID)
+
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid course id"})
 	}
+
 	var body createTopicReq
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
+
 	t := models.Topic{
-		ID:           uuid.New(),
-		CourseID:     uid,
-		Title:        body.Title,
-		Description:  body.Description,
-		OrderIndex:   body.OrderIndex,
-		PriceInPaisa: body.PriceInPaisa,
+		CourseID:    uid,
+		Title:       body.Title,
+		Description: body.Description,
+		OrderIndex:  body.OrderIndex,
+		Price:       body.Price,
 	}
+
 	if err := store.DB.Create(&t).Error; err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "db error"})
 	}
+
 	return c.JSON(t)
 }

@@ -65,10 +65,14 @@ func main() {
 	// auth
 	api.Post("/auth/signup", handlers.SignUp)
 	api.Post("/auth/login", handlers.Login)
+	api.Post("/auth/logout", handlers.Logout)
 
 	// public
 	api.Get("/courses", handlers.GetCourses)
 	api.Get("/courses/:id", handlers.GetCourse)
+
+	// Category
+	api.Get("/Category", handlers.GetCategory)
 
 	// user
 	user := api.Group("/user")
@@ -82,6 +86,20 @@ func main() {
 	admin.Use(middleware.RequireAuth, middleware.RequireAdmin)
 	admin.Post("/courses", handlers.AdminCreateCourse)
 	admin.Post("/courses/:id/topics", handlers.AdminCreateTopic)
+
+	google_meeting := api.Group("/google-meeting")
+	// google_meeting.Use(middleware.RequireAuth, middleware.RequireAdmin)
+	google_meeting.Post("/create-space", func(c *fiber.Ctx) error {
+		res, err := handlers.CreateSpace()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+		return c.JSON(fiber.Map{
+			"data": res,
+		})
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
