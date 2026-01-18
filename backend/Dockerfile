@@ -1,5 +1,5 @@
 # ---------- Build stage ----------
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ RUN adduser -D appuser
 USER appuser
 
 COPY --from=builder /app/prepbackend /prepbackend
-
-EXPOSE 8080
+COPY .env /app/.env
+EXPOSE 8081
 
 ENTRYPOINT ["/prepbackend"]
