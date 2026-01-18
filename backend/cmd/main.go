@@ -55,6 +55,12 @@ func main() {
 		Prefork: false,
 	})
 
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "http://localhost:8080, https://kodingkraze6-dashboard-903239c8.vercel.app", // Add your Vercel URL
+		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
+	}))
+
 	api := app.Group("/")
 	api.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("PrepBackend is running")
