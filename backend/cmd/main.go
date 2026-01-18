@@ -87,20 +87,7 @@ func main() {
 	admin.Post("/courses", handlers.AdminCreateCourse)
 	admin.Post("/courses/:id/topics", handlers.AdminCreateTopic)
 
-	google_meeting := api.Group("/google-meeting")
-	// google_meeting.Use(middleware.RequireAuth, middleware.RequireAdmin)
-	google_meeting.Post("/create-space", func(c *fiber.Ctx) error {
-		res, err := handlers.CreateSpace()
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": err.Error(),
-			})
-		}
-		return c.JSON(fiber.Map{
-			"data": res,
-		})
-	})
-
+	// start server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
