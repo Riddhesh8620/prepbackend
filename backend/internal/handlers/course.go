@@ -11,10 +11,10 @@ import (
 )
 
 type createCourseReq struct {
-	Title       string `json:"title"`
-	Slug        string `json:"slug"`
-	Description string `json:"description"`
-	Price       int    `json:"price_in_paisa"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Price       int       `json:"price_in_paisa"`
+	CategoryID  uuid.UUID `json:"category_id"`
 }
 
 func GetCourses(c *fiber.Ctx) error {
@@ -41,6 +41,7 @@ func AdminCreateCourse(c *fiber.Ctx) error {
 	course := models.Course{
 		Title:       body.Title,
 		Description: body.Description,
+		CategoryID:  body.CategoryID,
 	}
 	if err := store.DB.Create(&course).Error; err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "db error"})
