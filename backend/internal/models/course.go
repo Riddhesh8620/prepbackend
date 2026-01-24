@@ -9,7 +9,7 @@ type Course struct {
 	Title       string `gorm:"size:150;not null" json:"title"`
 	Description string `gorm:"type:text" json:"description"`
 	IsActive    bool   `gorm:"default:true" json:"is_active"`
-
+	Thumbnail   string `gorm:"size:255" json:"thumbnail"`
 	// Relations
 	CategoryID uuid.UUID `json:"category_id"`
 	Category   Category  `gorm:"foreignKey:CategoryID" json:"category,omitempty"`

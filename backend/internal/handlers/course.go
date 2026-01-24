@@ -15,6 +15,7 @@ type createCourseReq struct {
 	Description string    `json:"description"`
 	Price       int       `json:"price_in_paisa"`
 	CategoryID  uuid.UUID `json:"category_id"`
+	Thumbnail   string    `json:"thumbnail"`
 }
 
 func GetCourses(c *fiber.Ctx) error {

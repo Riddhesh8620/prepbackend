@@ -47,7 +47,11 @@ func main() {
 
 	// seed admin if env present
 	if err := handlers.CreateDefaultAdminIfNotExists(); err != nil {
-		log.Printf("seed admin: %v", err)
+		log.Printf("seeded admin: %v", err)
+	}
+
+	if err := handlers.AdminCreateDefaultCategory(); err != nil {
+		log.Printf("seeded categories: %v", err)
 	}
 
 	app := fiber.New(fiber.Config{
@@ -78,7 +82,8 @@ func main() {
 	api.Get("/courses/:id", handlers.GetCourse)
 
 	// Category
-	api.Get("/Category", handlers.GetCategory)
+	api.Get("/categories", handlers.GetCategory)
+	api.Post("/categories/save", handlers.SaveCategory)
 
 	// user
 	user := api.Group("/user")
@@ -96,7 +101,7 @@ func main() {
 	// start server
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8081"
 	}
 	log.Printf("listening on :%s", port)
 	if err := app.Listen(":" + port); err != nil {

@@ -69,7 +69,7 @@ func createRazorpayOrder(amount float32) (string, error) {
 	data := map[string]interface{}{
 		"amount":   amount,
 		"currency": "INR",
-		"receipt":  fmt.Sprintf("rcpt_%d", amount),
+		"receipt":  fmt.Sprintf("rcpt_%f", amount),
 	}
 	b, _ := json.Marshal(data)
 	req, _ := http.NewRequest("POST", "https://api.razorpay.com/v1/orders", bytes.NewReader(b))

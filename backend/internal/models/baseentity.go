@@ -14,3 +14,11 @@ type Base struct {
 	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"` // json:"-" hides it from API responses
 }
+
+// This function runs automatically before any record is inserted into the DB.
+func (base *Base) BeforeCreate(tx *gorm.DB) (err error) {
+	if base.ID == uuid.Nil {
+		base.ID = uuid.New()
+	}
+	return
+}
