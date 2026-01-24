@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"strings"
-
 	"prepbackend/internal/models"
 	"prepbackend/internal/store"
 	"prepbackend/internal/utils"
@@ -13,17 +11,11 @@ import (
 )
 
 func RequireAuth(c *fiber.Ctx) error {
-	auth := c.Get("Authorization")
-	if auth == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "missing authorization header"})
-	}
-	parts := strings.SplitN(auth, " ", 2)
-	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid auth header"})
-	}
-	tok, err := utils.ParseJWT(parts[1])
+	auth := c.Cookies("BearerToken")
+
+	tok, err := utils.ParseJWT(auth)
 	if err != nil || !tok.Valid {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "token has expired or invalid token"})
 	}
 	claims, ok := tok.Claims.(jwt.MapClaims)
 	if !ok {

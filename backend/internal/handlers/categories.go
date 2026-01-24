@@ -6,6 +6,7 @@ import (
 	"prepbackend/internal/store"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 type CategorySeed struct {
@@ -20,7 +21,7 @@ type CategoryDto struct {
 	IsActive    bool   `json:"is_active"`
 	IconName    string `json:"icon"`
 	Color       string `json:"color"`
-	CourseCount int    `json:"courseCount"`
+	CourseCount int16  `json:"courseCount"`
 }
 
 type CreateCateogoryReq struct {
@@ -31,20 +32,44 @@ type CreateCateogoryReq struct {
 	Color       string `json:"color"`
 }
 
-func GetCategory(c *fiber.Ctx) error {
-	var results []models.Category
-	store.DB.Find(&results)
-
-	var dtos []CategoryDto
-	for _, cat := range results {
-		dtos = append(dtos, CategoryDto{
-			ID:          cat.ID.String(),
-			Title:       cat.Title,
-			Description: cat.Description,
-			IsActive:    cat.IsActive,
-			IconName:    cat.IconName,
-			Color:       cat.Color,
+func GetCategoryById(c *fiber.Ctx) error {
+	// 1. Parse the ID from parameters
+	categoryId, err := uuid.Parse(c.Params("id"))
+	if err != nil || categoryId == uuid.Nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid or missing Category ID",
 		})
+	}
+
+	// 2. Define a single DTO (not a slice)
+	var dto CategoryDto
+
+	// 3. Query with a Where clause and a subquery for the count
+	// This allows you to get all category info + course count in one go
+	err = store.DB.Model(&models.Category{}).
+		Select("categories.*, (SELECT COUNT(*) FROM courses WHERE courses.category_id = categories.id) as course_count").
+		Where("id = ?", categoryId).
+		First(&dto).Error
+
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "Category not found",
+		})
+	}
+	return c.JSON(dto)
+}
+
+func GetCategory(c *fiber.Ctx) error {
+	var dtos []CategoryDto
+
+	// This query gets categories and counts courses in one single trip to the DB
+	err := store.DB.Model(&models.Category{}).
+		Select("categories.*, (SELECT COUNT(*) FROM courses WHERE courses.category_id = categories.id) as course_count").
+		Where("categories.is_active = ?", true). // Added explicit table reference
+		Find(&dtos).Error
+
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to fetch categories"})
 	}
 
 	return c.JSON(dtos)
@@ -61,6 +86,7 @@ func SaveCategory(c *fiber.Ctx) error {
 		Description: body.Description,
 		IconName:    body.IconName,
 		IsActive:    true,
+		Color:       body.Color,
 	}
 
 	if err := store.DB.Create(&category).Error; err != nil {

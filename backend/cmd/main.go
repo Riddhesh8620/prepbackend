@@ -46,13 +46,14 @@ func main() {
 	}
 
 	// seed admin if env present
-	if err := handlers.CreateDefaultAdminIfNotExists(); err != nil {
-		log.Printf("seeded admin: %v", err)
-	}
+	// if err := handlers.CreateDefaultAdminIfNotExists(); err != nil {
+	// 	log.Printf("seeded admin: %v", err)
+	// }
 
-	if err := handlers.AdminCreateDefaultCategory(); err != nil {
-		log.Printf("seeded categories: %v", err)
-	}
+	// seed default categories
+	// if err := handlers.AdminCreateDefaultCategory(); err != nil {
+	// 	log.Printf("seeded categories: %v", err)
+	// }
 
 	app := fiber.New(fiber.Config{
 		AppName: "PrepBackend",
@@ -78,12 +79,17 @@ func main() {
 	api.Post("/auth/logout", handlers.Logout)
 
 	// public
-	api.Get("/courses", handlers.GetCourses)
-	api.Get("/courses/:id", handlers.GetCourse)
+	courseViewGrp := api.Group("/courses")
+	courseViewGrp.Get("/", handlers.GetCourses)
+	courseViewGrp.Get("/get-by-id/:id", handlers.GetCourse)
+	courseViewGrp.Get("/:categoryId", handlers.GetCoursesByCategory)
 
 	// Category
 	api.Get("/categories", handlers.GetCategory)
-	api.Post("/categories/save", handlers.SaveCategory)
+	api.Get("/categories/:id", handlers.GetCategoryById)
+	categoryCreateGroup := api.Group("/categories")
+	categoryCreateGroup.Use(middleware.RequireAuth, middleware.RequireAdmin)
+	categoryCreateGroup.Post("/save", handlers.SaveCategory)
 
 	// user
 	user := api.Group("/user")
@@ -93,10 +99,10 @@ func main() {
 	user.Post("/payment/verify", handlers.VerifyPayment)
 
 	// admin
-	admin := api.Group("/admin")
+
+	admin := api.Group("/courses")
 	admin.Use(middleware.RequireAuth, middleware.RequireAdmin)
-	admin.Post("/courses", handlers.AdminCreateCourse)
-	admin.Post("/courses/:id/topics", handlers.AdminCreateTopic)
+	admin.Post("/save", handlers.CreateCourse)
 
 	// start server
 	port := os.Getenv("PORT")
