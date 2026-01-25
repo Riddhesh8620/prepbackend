@@ -41,9 +41,9 @@ func main() {
 	}
 
 	// run migrations
-	if err := store.RunMigrations(); err != nil {
-		log.Fatalf("migrate: %v", err)
-	}
+	// if err := store.RunMigrations(); err != nil {
+	// 	log.Fatalf("migrate: %v", err)
+	// }
 
 	// seed admin if env present
 	// if err := handlers.CreateDefaultAdminIfNotExists(); err != nil {

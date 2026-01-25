@@ -32,6 +32,26 @@ type CreateCateogoryReq struct {
 	Color       string `json:"color"`
 }
 
+func GetCategoryByIdInternal(categoryId string) (models.Category, error) {
+	var dto models.Category
+	id, err := uuid.Parse(categoryId)
+	if err != nil || id == uuid.Nil {
+		return dto, err
+	}
+	// Use .First() to retrieve the category data directly into the DTO.
+	// This will map the fields from the categories table to your struct.
+	err = store.DB.
+		Model(&models.Category{}).
+		First(&dto, "id = ?", id).Error
+
+	if err != nil {
+		// Return the empty DTO and the error to the calling function
+		return dto, err
+	}
+
+	return dto, nil
+}
+
 func GetCategoryById(c *fiber.Ctx) error {
 	// 1. Parse the ID from parameters
 	categoryId, err := uuid.Parse(c.Params("id"))

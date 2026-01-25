@@ -15,7 +15,7 @@ type Course struct {
 	Duration      string  `gorm:"not null" json:"duration"` // in minutes
 	// Relations
 	CategoryID uuid.UUID `json:"category_id"`
-	Category   Category  `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
+	Category   Category  `gorm:"foreignKey:CategoryID"`
 	Topics     []Topic   `json:"topics"`
 	Base
 }

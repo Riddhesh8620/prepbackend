@@ -24,6 +24,8 @@ type courseDetail struct {
 	Image         string         `json:"image"`
 	Description   string         `json:"description"`
 	Curriculum    []models.Topic `json:"curriculum"`
+	CategoryName  string         `json:"categoryName"`
+	CategoryColor string         `json:"categoryColor"`
 }
 
 type createCourseReq struct {
@@ -37,10 +39,51 @@ type createCourseReq struct {
 	Duration      string           `json:"duration"`
 }
 
+type courseDto struct {
+	ID            string  `json:"id"`
+	Title         string  `json:"title"`
+	Description   string  `json:"description"`
+	Thumbnail     string  `json:"image"`
+	Price         float32 `json:"price"`
+	OriginalPrice float32 `json:"originalPrice"`
+	Level         string  `json:"level"`
+	Duration      string  `json:"duration"`
+	CategoryID    string  `json:"category_id"`
+	Topics        int64   `json:"topics"`
+	CategoryName  string  `json:"categoryName"`
+	CategoryColor string  `json:"categoryColor"`
+}
+
 func GetCourses(c *fiber.Ctx) error {
 	var courses []models.Course
-	store.DB.Preload("Topics").Find(&courses)
-	return c.JSON(courses)
+
+	var dtoList []courseDto
+
+	if err := store.DB.
+		Preload("Topics").
+		First(&courses).Error; err != nil {
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "courses not found"})
+
+	}
+	for _, model := range courses {
+
+		categoryDto, _ := GetCategoryByIdInternal(model.CategoryID.String())
+
+		dtoList = append(dtoList, courseDto{
+			ID:            model.ID.String(),
+			Title:         model.Title,
+			Price:         model.Price,
+			OriginalPrice: model.OriginalPrice,
+			Duration:      model.Duration,
+			Level:         model.Level,
+			Thumbnail:     model.Thumbnail,
+			Description:   model.Description,
+			CategoryName:  categoryDto.Title,
+			CategoryColor: categoryDto.Color,
+			Topics:        int64(len(model.Topics)),
+		})
+	}
+	return c.JSON(dtoList)
 }
 
 func GetCourse(c *fiber.Ctx) error {
@@ -133,19 +176,22 @@ func GetCourseIDsByCategory(categoryID *uuid.UUID) (int16, error) {
 }
 
 func GetCoursesByCategory(c *fiber.Ctx) error {
+	var courseDtoList []courseDto
+
 	categoryID, err := uuid.Parse(c.Params("categoryId"))
 	if err != nil || categoryID == uuid.Nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid category id"})
 	}
 
-	var courses []models.Course
-
-	err = store.DB.Where("category_id = ?", categoryID).Find(&courses).Error
+	err = store.DB.Model(&models.Course{}).
+		Select("courses.*, (SELECT COUNT(*) FROM topics WHERE topics.course_id = courses.id) as topics").
+		Where("category_id = ?", categoryID).
+		Scan(&courseDtoList).Error
 
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "Could not fetch courses",
 		})
 	}
-	return c.JSON(courses)
+	return c.JSON(courseDtoList)
 }
