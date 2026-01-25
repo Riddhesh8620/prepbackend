@@ -2,14 +2,18 @@ package handlers
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/smtp"
 	"os"
+	"prepbackend/internal/models"
+	"prepbackend/internal/store"
 	"sync"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 type otpVerifyReq struct {
@@ -46,12 +50,20 @@ func SendOTPEmail(c *fiber.Ctx) error {
 	GMAIL_ID := os.Getenv("GMAIL_ID")
 	APP_PASSWORD := os.Getenv("APP_PASSWORD")
 
-	otp := generateOTP()
-
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid request"})
 	}
+	var user models.User
+	result := store.DB.Where("email = ?", body.TargetEmail).First(&user)
 
+	if result.Error != nil && errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		// Email not found in DB
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{
+			"error": "This email is not registered with KodingKraze6",
+		})
+	}
+
+	otp := generateOTP()
 	// Store OTP with the email as the key
 	mu.Lock()
 	otpStore[body.TargetEmail] = otp
@@ -79,7 +91,7 @@ func SendOTPEmail(c *fiber.Ctx) error {
       </p>
       
       <div style="background-color: #f5f3ff; border: 2px dashed #ddd6fe; padding: 24px; border-radius: 20px; margin-bottom: 32px;">
-        <span style="font-size: 42px; font-weight: 800; letter-spacing: 12px; color: #7c3aed; font-family: 'Courier New', monospace;">
+        <span style="font-size: 35px; font-weight: 800; letter-spacing: 12px; color: #7c3aed; font-family: 'Courier New', monospace;">
           %s
         </span>
       </div>
