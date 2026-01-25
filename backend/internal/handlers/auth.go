@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -10,6 +12,7 @@ import (
 	"prepbackend/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 type signupReq struct {
@@ -48,6 +51,41 @@ func SignUp(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"token": token})
 }
 
+func LoginInternal(email *string, c *fiber.Ctx) error {
+
+	var u models.User
+
+	// Attempt to find the user in the database
+	if err := store.DB.Where("email = ?", email).First(&u).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Return a specific error if the user hasn't registered yet
+			return errors.New("user not found: please create an account first")
+		}
+		// Return a generic database error
+		return fmt.Errorf("database error: %v", err)
+	}
+
+	token, _ := utils.CreateJWT(u.ID.String(), u.Role)
+	cookieMaxAge := int(utils.SessionDuration.Seconds())
+
+	c.Cookie(&fiber.Cookie{
+		Name:     "BearerToken",
+		Value:    token,
+		HTTPOnly: true,         // Crucial for XSS protection
+		Secure:   true,         // Recommended: Only send over HTTPS
+		SameSite: "Lax",        // Recommended: Mitigation for CSRF
+		MaxAge:   cookieMaxAge, // Cookie expires in 5 minutes (in seconds)
+		// Path is optional, defaults to "/"
+	})
+
+	return c.JSON(fiber.Map{
+		"name":  u.Name,
+		"role":  u.Role,
+		"id":    u.ID,
+		"email": u.Email,
+	})
+}
+
 func Login(c *fiber.Ctx) error {
 	var body loginReq
 	if err := c.BodyParser(&body); err != nil {
@@ -61,14 +99,15 @@ func Login(c *fiber.Ctx) error {
 		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "invalid credentials"})
 	}
 	token, _ := utils.CreateJWT(u.ID.String(), u.Role)
+	cookieMaxAge := int(utils.SessionDuration.Seconds())
 	// Set cookie
 	c.Cookie(&fiber.Cookie{
 		Name:     "BearerToken",
 		Value:    token,
-		HTTPOnly: true,     // Crucial for XSS protection
-		Secure:   true,     // Recommended: Only send over HTTPS
-		SameSite: "Strict", // Recommended: Mitigation for CSRF
-		MaxAge:   3000,     // Cookie expires in 5 minutes (in seconds)
+		HTTPOnly: true,         // Crucial for XSS protection
+		Secure:   true,         // Recommended: Only send over HTTPS
+		SameSite: "Lax",        // Recommended: Mitigation for CSRF
+		MaxAge:   cookieMaxAge, // Cookie expires in 5 minutes (in seconds)
 		// Path is optional, defaults to "/"
 	})
 

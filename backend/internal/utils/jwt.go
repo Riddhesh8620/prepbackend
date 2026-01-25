@@ -7,12 +7,14 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const SessionDuration = 100 * time.Minute
+
 func CreateJWT(userID string, role string) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	claims := jwt.MapClaims{
 		"sub":  userID,
 		"role": role,
-		"exp":  time.Now().Add(100 * time.Minute).Unix(),
+		"exp":  time.Now().Add(SessionDuration).Unix(),
 		"iat":  time.Now().Unix(),
 	}
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

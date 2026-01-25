@@ -77,7 +77,8 @@ func main() {
 	api.Post("/auth/signup", handlers.SignUp)
 	api.Post("/auth/login", handlers.Login)
 	api.Post("/auth/logout", handlers.Logout)
-
+	api.Post("auth/send/otp", handlers.SendOTPEmail)
+	api.Post("auth/otp/verify", handlers.VerifyOTP)
 	// public
 	courseViewGrp := api.Group("/courses")
 	courseViewGrp.Get("/", handlers.GetCourses)
