@@ -26,6 +26,8 @@ type courseDetail struct {
 	Curriculum    []models.Topic `json:"curriculum"`
 	CategoryName  string         `json:"categoryName"`
 	CategoryColor string         `json:"categoryColor"`
+	CategoryID    string         `json:"categoryId"`
+	Topics        int64          `json:"topics"`
 }
 
 type createCourseReq struct {
@@ -37,6 +39,11 @@ type createCourseReq struct {
 	Topics        []createTopicReq `json:"topics"`
 	Level         string           `json:"level"`
 	Duration      string           `json:"duration"`
+}
+
+type updateCourseReq struct {
+	createCourseReq
+	CourseId string `json:"courseId"`
 }
 
 type courseDto struct {
@@ -57,11 +64,11 @@ type courseDto struct {
 func GetCourses(c *fiber.Ctx) error {
 	var courses []models.Course
 
-	var dtoList []courseDto
+	var dtoList []courseDetail
 
 	if err := store.DB.
 		Preload("Topics").
-		First(&courses).Error; err != nil {
+		Find(&courses).Error; err != nil {
 		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "courses not found"})
 
 	}
@@ -69,18 +76,28 @@ func GetCourses(c *fiber.Ctx) error {
 
 		categoryDto, _ := GetCategoryByIdInternal(model.CategoryID.String())
 
-		dtoList = append(dtoList, courseDto{
+		var topicsCount int64 = 0
+		for _, t := range model.Topics {
+			// Assuming your 'createTopicReq' uses string IDs or you're checking for non-empty titles
+			if t.IsActive {
+				topicsCount = topicsCount + 1
+			}
+		}
+
+		dtoList = append(dtoList, courseDetail{
 			ID:            model.ID.String(),
 			Title:         model.Title,
 			Price:         model.Price,
 			OriginalPrice: model.OriginalPrice,
 			Duration:      model.Duration,
 			Level:         model.Level,
-			Thumbnail:     model.Thumbnail,
+			Image:         model.Thumbnail,
 			Description:   model.Description,
 			CategoryName:  categoryDto.Title,
 			CategoryColor: categoryDto.Color,
-			Topics:        int64(len(model.Topics)),
+			CategoryID:    categoryDto.ID.String(),
+			Topics:        topicsCount,
+			Curriculum:    model.Topics,
 		})
 	}
 	return c.JSON(dtoList)
@@ -184,7 +201,12 @@ func GetCoursesByCategory(c *fiber.Ctx) error {
 	}
 
 	err = store.DB.Model(&models.Course{}).
-		Select("courses.*, (SELECT COUNT(*) FROM topics WHERE topics.course_id = courses.id) as topics").
+		Select(`
+            courses.*, 
+            (SELECT COUNT(*) FROM topics 
+             WHERE topics.course_id = courses.id 
+             AND topics.is_active = true) as topics
+        `).
 		Where("category_id = ?", categoryID).
 		Scan(&courseDtoList).Error
 
@@ -194,4 +216,77 @@ func GetCoursesByCategory(c *fiber.Ctx) error {
 		})
 	}
 	return c.JSON(courseDtoList)
+}
+
+func UpdateCourse(c *fiber.Ctx) error {
+
+	file, err := c.FormFile("image")
+	var base64Image string
+	if err == nil {
+		openedFile, _ := file.Open()
+		defer openedFile.Close()
+		fileBytes := make([]byte, file.Size)
+		openedFile.Read(fileBytes)
+		mimeType := file.Header.Get("Content-Type")
+		base64Image = fmt.Sprintf("data:%s;base64,%s", mimeType, base64.StdEncoding.EncodeToString(fileBytes))
+	}
+
+	// Start a transaction to ensure atomicity
+	tx := store.DB.Begin()
+	courseID, err := uuid.Parse(c.FormValue("courseId"))
+	// 1. Update Course Metadata
+	var course models.Course
+	if err := tx.First(&course, "id = ?", courseID).Error; err != nil {
+		tx.Rollback()
+		return c.Status(404).JSON(fiber.Map{"error": "Course ID not found "})
+	}
+
+	price, _ := strconv.ParseFloat(c.FormValue("price"), 32)
+	origPrice, _ := strconv.ParseFloat(c.FormValue("original_price"), 32)
+	catID, _ := uuid.Parse(c.FormValue("category_id"))
+	level := c.FormValue("level")
+	duration := c.FormValue("duration")
+
+	course.Title = c.FormValue("title")
+	course.Description = c.FormValue("description")
+	course.Price = float32(price)
+	course.OriginalPrice = float32(origPrice)
+	course.CategoryID = catID
+	course.Level = level
+	course.Duration = duration
+
+	if base64Image != "" {
+		course.Thumbnail = base64Image
+	}
+
+	if err := tx.Save(&course).Error; err != nil {
+		tx.Rollback()
+		return c.Status(500).JSON(fiber.Map{"error": "failed to update course"})
+	}
+
+	// 2. Refresh Curriculum (Delete existing topics and re-add)
+	// This handles additions, removals, and reordering in one go.
+	if err := tx.Where("course_id = ?", courseID).Delete(&models.Topic{}).Error; err != nil {
+		tx.Rollback()
+		return c.Status(500).JSON(fiber.Map{"error": "failed to clear old topics"})
+	}
+
+	var topics []createTopicReq
+	if err := json.Unmarshal([]byte(c.FormValue("topics")), &topics); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid topics format"})
+	}
+
+	var txSuccess bool = AdminUpdateTopic(tx, topics)
+
+	if !txSuccess {
+		tx.Rollback()
+	}
+
+	// Commit the transaction
+	tx.Commit()
+
+	return c.Status(200).JSON(fiber.Map{
+		"message": "Course and curriculum updated successfully",
+		"id":      courseID,
+	})
 }
