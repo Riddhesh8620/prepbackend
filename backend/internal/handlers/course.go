@@ -264,24 +264,6 @@ func UpdateCourse(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error": "failed to update course"})
 	}
 
-	// 2. Refresh Curriculum (Delete existing topics and re-add)
-	// This handles additions, removals, and reordering in one go.
-	// if err := tx.Where("course_id = ?", courseID).Delete(&models.Topic{}).Error; err != nil {
-	// 	tx.Rollback()
-	// 	return c.Status(500).JSON(fiber.Map{"error": "failed to clear old topics"})
-	// }
-
-	var topics []createTopicReq
-	if err := json.Unmarshal([]byte(c.FormValue("topics")), &topics); err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": "invalid topics format"})
-	}
-
-	var txSuccess bool = AdminUpdateTopic(tx, topics)
-
-	if !txSuccess {
-		tx.Rollback()
-	}
-
 	// Commit the transaction
 	tx.Commit()
 

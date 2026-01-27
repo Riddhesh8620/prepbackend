@@ -45,3 +45,11 @@ func RequireAdmin(c *fiber.Ctx) error {
 	}
 	return c.Next()
 }
+
+func RequireStudent(c *fiber.Ctx) error {
+	role := c.Locals("role")
+	if role == nil || role.(string) != "student" {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": ""})
+	}
+	return c.Next()
+}
