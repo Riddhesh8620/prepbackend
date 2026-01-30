@@ -17,8 +17,8 @@ type Base struct {
 
 // This function runs automatically before any record is inserted into the DB.
 func (base *Base) BeforeCreate(tx *gorm.DB) (err error) {
-	uuidv7, err := uuid.NewV7()
-	if err == nil && base.ID == uuid.Nil {
+	uuidv7 := uuid.New()
+	if base.ID == uuid.Nil {
 		base.ID = uuidv7
 	}
 	return

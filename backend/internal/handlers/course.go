@@ -233,7 +233,7 @@ func UpdateCourse(c *fiber.Ctx) error {
 
 	// Start a transaction to ensure atomicity
 	tx := store.DB.Begin()
-	courseID, err := uuid.Parse(c.FormValue("courseId"))
+	courseID, err := uuid.Parse(c.FormValue("id"))
 	// 1. Update Course Metadata
 	var course models.Course
 	if err := tx.First(&course, "id = ?", courseID).Error; err != nil {
