@@ -41,9 +41,9 @@ func main() {
 	}
 
 	// run migrations
-	// if err := store.RunMigrations(); err != nil {
-	// 	log.Fatalf("migrate: %v", err)
-	// }
+	if err := store.RunMigrations(); err != nil {
+		log.Fatalf("migrate: %v", err)
+	}
 
 	// seed admin if env present
 	// if err := handlers.CreateDefaultAdminIfNotExists(); err != nil {
@@ -79,15 +79,20 @@ func main() {
 	api.Post("/auth/logout", handlers.Logout)
 	api.Post("auth/send/otp", handlers.SendOTPEmail)
 	api.Post("auth/otp/verify", handlers.VerifyOTP)
+
 	// public
 	courseViewGrp := api.Group("/courses")
+	courseViewGrp.Use(middleware.RequireAuth, middleware.RequireStudent)
 	courseViewGrp.Get("/", handlers.GetCourses)
 	courseViewGrp.Get("/get-by-id/:id", handlers.GetCourse)
 	courseViewGrp.Get("/:categoryId", handlers.GetCoursesByCategory)
 
 	// Category
-	api.Get("/categories", handlers.GetCategory)
-	api.Get("/categories/:id", handlers.GetCategoryById)
+	categoryViewGrp := api.Group("/categories")
+	categoryViewGrp.Use(middleware.RequireAuth, middleware.RequireStudent)
+	categoryViewGrp.Get("/", handlers.GetCategory)
+	categoryViewGrp.Get("/:id", handlers.GetCategoryById)
+
 	categoryCreateGroup := api.Group("/categories")
 	categoryCreateGroup.Use(middleware.RequireAuth, middleware.RequireAdmin)
 	categoryCreateGroup.Post("/save", handlers.SaveCategory)
