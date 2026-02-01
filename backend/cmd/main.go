@@ -41,9 +41,9 @@ func main() {
 	}
 
 	// run migrations
-	if err := store.RunMigrations(); err != nil {
-		log.Fatalf("migrate: %v", err)
-	}
+	// if err := store.RunMigrations(); err != nil {
+	// 	log.Fatalf("migrate: %v", err)
+	// }
 
 	// seed admin if env present
 	// if err := handlers.CreateDefaultAdminIfNotExists(); err != nil {
@@ -82,18 +82,16 @@ func main() {
 
 	// public
 	courseViewGrp := api.Group("/courses")
-	courseViewGrp.Use(middleware.RequireAuth, middleware.RequireStudent)
 	courseViewGrp.Get("/", handlers.GetCourses)
 	courseViewGrp.Get("/get-by-id/:id", handlers.GetCourse)
 	courseViewGrp.Get("/:categoryId", handlers.GetCoursesByCategory)
 
 	// Category
 	categoryViewGrp := api.Group("/categories")
-	categoryViewGrp.Use(middleware.RequireAuth, middleware.RequireStudent)
 	categoryViewGrp.Get("/", handlers.GetCategory)
 	categoryViewGrp.Get("/:id", handlers.GetCategoryById)
 
-	categoryCreateGroup := api.Group("/categories")
+	categoryCreateGroup := api.Group("/categories-admin")
 	categoryCreateGroup.Use(middleware.RequireAuth, middleware.RequireAdmin)
 	categoryCreateGroup.Post("/save", handlers.SaveCategory)
 
@@ -114,7 +112,7 @@ func main() {
 	topicsAdminGroup := api.Group("/topics")
 	topicsAdminGroup.Use(middleware.RequireAuth, middleware.RequireAdmin)
 	topicsAdminGroup.Post("/update", handlers.AdminUpdateTopicInternal)
-
+	topicsAdminGroup.Post("/delete", handlers.AdminDeleteTopic)
 	// start server
 	port := os.Getenv("PORT")
 	if port == "" {

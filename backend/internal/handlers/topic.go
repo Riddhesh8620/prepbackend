@@ -79,6 +79,30 @@ func AdminUpdateTopics(txContext *gorm.DB, topics []createTopicReq) bool {
 	return err == nil
 }
 
+func AdminDeleteTopic(c *fiber.Ctx) error {
+
+	tx := store.DB.Begin()
+
+	topicId, err := uuid.Parse(c.FormValue("id"))
+
+	if err != nil || topicId == uuid.Nil {
+		return c.Status(400).JSON(fiber.Map{"Error": "Invalid Topic Id"})
+	}
+
+	r := tx.Where("id = ?", topicId).Delete(&models.Topic{})
+
+	if r.Error != nil {
+		return c.Status(400).
+			JSON(fiber.Map{
+				"Error":     r.Error,
+				"IsSuccess": false})
+	}
+
+	tx.Commit()
+
+	return c.Status(http.StatusOK).JSON(nil)
+}
+
 func AdminUpdateTopicInternal(c *fiber.Ctx) error {
 	var dbError error
 	tx := store.DB.Begin()

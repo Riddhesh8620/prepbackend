@@ -15,5 +15,8 @@ func RunMigrations() error {
 		&models.Course{},
 		&models.Topic{},
 		&models.Purchase{},
+		&models.CourseInventory{},
+		&models.TopicInventory{},
+		&models.UserPaymentSession{},
 	)
 }

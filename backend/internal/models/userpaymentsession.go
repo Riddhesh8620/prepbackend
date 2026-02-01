@@ -6,7 +6,7 @@ import (
 
 type UserPaymentSession struct {
 	ID            uuid.UUID `gorm:"type:uuid;primaryKey" json:"id"`
-	UserID        uuid.UUID `json:"userId"`
+	UserID        uuid.UUID `gorm:"type:uuid" json:"user_id"`
 	PaymentID     uuid.UUID `gorm:"type:uuid;"`
 	PaymentMode   string    `gorm:"size:100"`
 	PayableAmount float32   `gorm:"type:decimal(10,2);not null"`
