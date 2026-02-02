@@ -10,6 +10,7 @@ import (
 
 	"prepbackend/internal/config"
 	"prepbackend/internal/handlers"
+	"prepbackend/internal/handlers/dashboards"
 	"prepbackend/internal/middleware"
 	"prepbackend/internal/store"
 )
@@ -97,10 +98,8 @@ func main() {
 
 	// user
 	user := api.Group("/user")
-	user.Use(middleware.RequireAuth)
-	user.Get("/dashboard", handlers.UserDashboard)
-	user.Post("/purchase/topic/:id", handlers.CreateTopicPurchase)
-	user.Post("/payment/verify", handlers.VerifyPayment)
+	user.Use(middleware.RequireAuth, middleware.RequireStudent)
+	user.Get("/inventory", dashboards.GetUserInventory)
 
 	// admin
 	admin := api.Group("/courses")
@@ -113,6 +112,17 @@ func main() {
 	topicsAdminGroup.Use(middleware.RequireAuth, middleware.RequireAdmin)
 	topicsAdminGroup.Post("/update", handlers.AdminUpdateTopicInternal)
 	topicsAdminGroup.Post("/delete", handlers.AdminDeleteTopic)
+
+	// payments
+	paymentGrp := api.Group("/payment")
+	paymentGrp.Use(middleware.RequireAuth)
+	paymentGrp.Post("/session-create", handlers.CreatePaymentSession)
+	paymentGrp.Get("/status/:session_id", handlers.HandlePaymentSessionHook)
+
+	adminGrp := api.Group("/admin")
+	adminGrp.Use(middleware.RequireAuth, middleware.RequireAdmin)
+	adminGrp.Get("/payment-sessions", dashboards.GetAllPaymentSessions)
+	adminGrp.Post("payment/update/:id", handlers.HandleAdminUpdatePayment)
 	// start server
 	port := os.Getenv("PORT")
 	if port == "" {
