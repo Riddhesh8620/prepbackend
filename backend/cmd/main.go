@@ -62,7 +62,7 @@ func main() {
 	})
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:8080, https://kodingkraze6-dashboard-903239c8.vercel.app", // Add your Vercel URL
+		AllowOrigins: "http://localhost:8080, https://kodingkraze6-dashboard-903239c8.vercel.app, https://kodingkraze-dashboard-235551953033.asia-south1.run.app", // Add your Vercel URL
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
 	}))
