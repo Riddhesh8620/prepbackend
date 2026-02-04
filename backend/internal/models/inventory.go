@@ -8,22 +8,30 @@ import (
 
 type TopicInventory struct {
 	BaseID
-	UserID               uuid.UUID `json:"user_id"`
+	UserID               uuid.UUID `gorm:"type:uuid" json:"user_id"`
 	IsActive             bool      `json:"is_active"`
-	TopicID              uuid.UUID `json:"topic_id"`
-	UserPaymentSessionId uuid.UUID `json:"user_payment_session_id"`
+	TopicID              uuid.UUID `gorm:"type:uuid" json:"topic_id"`
+	UserPaymentSessionId uuid.UUID `gorm:"type:uuid" json:"user_payment_session_id"`
 	CreatedAt            time.Time `json:"createdAt"`
 	UpdatedAt            time.Time `json:"updatedAt"`
+
+	Topic   Topic              `gorm:"foreignKey:TopicID"`
+	Session UserPaymentSession `gorm:"foreignKey:UserPaymentSessionId"`
+	User    User               `gorm:"foreignKey:UserID"`
 }
 
 type CourseInventory struct {
 	BaseID
-	UserID               uuid.UUID `json:"user_id"`
+	UserID               uuid.UUID `gorm:"type:uuid" json:"user_id"`
 	IsActive             bool      `json:"is_active"`
-	CourseID             uuid.UUID `json:"course_id"`
-	UserPaymentSessionId uuid.UUID `json:"user_payment_session_id"`
+	CourseID             uuid.UUID `gorm:"type:uuid" json:"course_id"`
+	UserPaymentSessionId uuid.UUID `gorm:"type:uuid" json:"user_payment_session_id"`
 	CreatedAt            time.Time `json:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at"`
+
+	Course  Course             `gorm:"foreignKey:CourseID"`
+	Session UserPaymentSession `gorm:"foreignKey:UserPaymentSessionId"`
+	User    User               `gorm:"foreignKey:UserID"`
 }
 
 type AddInventoryReqDto struct {
@@ -32,4 +40,17 @@ type AddInventoryReqDto struct {
 	Price            float32   `json:"product_amount"`
 	PaymentSessionID string    `json:"payment_session_id"`
 	CreationDateTime time.Time `json:"creation_datetime"`
+}
+
+type TopicGroup struct {
+	TopicTitle  string `gorm:"column:topic_title"`
+	CourseTitle string `gorm:"column:course_title"`
+}
+
+type CourseGroup struct {
+	Topics []string
+}
+
+type CourseProject struct {
+	CourseTitle string `gorm:"column:course_title"`
 }

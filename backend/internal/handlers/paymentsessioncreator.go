@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"prepbackend/internal/handlers/dashboards"
 	"prepbackend/internal/models"
 	"prepbackend/internal/store"
 	"time"
@@ -160,6 +161,12 @@ func HandleAdminUpdatePayment(c *fiber.Ctx) error {
 				Update("is_active", true).Error; err != nil {
 				return err
 			}
+		}
+
+		emailErr := dashboards.SendPaymentSuccesfullEmail(c, &sessionID)
+
+		if emailErr != nil {
+			return emailErr
 		}
 
 		// Return nil to commit the transaction

@@ -15,6 +15,7 @@ func RequireAuth(c *fiber.Ctx) error {
 
 	tok, err := utils.ParseJWT(auth)
 	if err != nil || !tok.Valid {
+		c.ClearCookie("BearerToken")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "token has expired or invalid token"})
 	}
 	claims, ok := tok.Claims.(jwt.MapClaims)
