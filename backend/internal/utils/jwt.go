@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const SessionDuration = 100 * time.Minute
+const SessionDuration = 10 * time.Minute
 
 func CreateJWT(userID string, role string) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
